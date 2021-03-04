@@ -481,7 +481,9 @@ again:
         /* args->peername, args->fd.something, login, password */
         /* syslog(syslog_pri, "saddr: %s; sport: %d; login: %s; password: %s", saddr, sport, login, password); */
         /* TMP: */
-        syslog(syslog_pri, "saddr: %s; sport: TODO; login: %s; password: %s", args->peername, login, password);
+	struct sockaddr_in6 *s = (struct sockaddr_in6*)&args->peer;
+	int peerport = ntohs(s->sin6_port);
+        syslog(syslog_pri, "saddr: %s; sport: %d; login: %s; password: %s", args->peername, peerport, login, password);
 
 	/* Print the resulting username/password combination */
 	print_passwords(args->fp_passwords, login, login_length, password, password_length);
