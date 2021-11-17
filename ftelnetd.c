@@ -21,6 +21,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "bjoernhoehrmann.h"
+
 #define closesocket(fd) close(fd)
 #define WSA(err) (err)
 #define WSAGetLastError() (errno)
@@ -353,9 +355,25 @@ again:
 	struct sockaddr_in6 *s = (struct sockaddr_in6*)&args->peer;
 	int peerport = ntohs(s->sin6_port);
 
-        /* Send the login attempt to syslog */
-        syslog(syslog_pri, "saddr: %s; sport: %d; login: %s; password: %s",
-		args->peername, peerport, login, password);
+	size_t count = 0;
+
+	/* Check if login and password are valid UTF-8 */
+	if (countCodePoints((uint8_t *)login, &count)) {
+		/* Issue with login */
+		if (countCodePoints((uint8_t*)password, &count)) {
+		  /* Issue with password as well */
+		  syslog(syslog_pri, "saddr: %s; sport: %d; login: UTF8ISSUE; password: UTF8ISSUE", args->peername, peerport);
+		} else {
+		  syslog(syslog_pri, "saddr: %s; sport: %d; login: UTF8ISSUE; password: %s", args->peername, peerport, password);
+		}
+	} else if (countCodePoints((uint8_t *)password, &count)){
+		/* Issue with password */
+		syslog(syslog_pri, "saddr: %s; sport: %d; login: UTF8ISSUE; password: UTF8ISSUE", args->peername, peerport);
+	} else {
+        	/* Send the login attempt to syslog */
+        	syslog(syslog_pri, "saddr: %s; sport: %d; login: %s; password: %s",
+			args->peername, peerport, login, password);
+	}
 
 	/* Print error and loop around to do it again */
 	if (state == 1)
